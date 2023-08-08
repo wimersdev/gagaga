@@ -4,17 +4,13 @@ import * as dat from 'lil-gui';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-import aboutSphere from '$utils/about';
+gsap.registerPlugin(ScrollTrigger); //Initialize scrollTrigger
 
-gsap.registerPlugin(ScrollTrigger);
+console.clear(); //Clear console after reloading
 
-console.clear();
-/**
- * Base
- */
 // Debug
 const gui = new dat.GUI();
-//gui.destroy();
+gui.destroy(); //Remove GUI
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl');
@@ -24,10 +20,7 @@ const scene = new THREE.Scene();
 const galaxy = new THREE.Object3D();
 scene.add(galaxy);
 
-/**
- * Test cube
- */
-
+//Configure galaxy
 const parameters = {
   count: 123000,
   size: 0.01,
@@ -45,6 +38,7 @@ let geometry = null;
 let material = null;
 let points = null;
 
+//Galaxy Generator
 const generateGalaxy = (opacityValue) => {
   // Destroy old galaxy
 
@@ -113,18 +107,21 @@ const generateGalaxy = (opacityValue) => {
 
 generateGalaxy(0.8);
 
-gui.add(parameters, 'count').min(100).max(1000000).step(100).onChange(generateGalaxy);
-gui.add(parameters, 'size').min(0.001).max(0.1).step(0.001).onFinishChange(generateGalaxy);
-gui.add(parameters, 'radius').min(0.01).max(20).step(0.01).onFinishChange(generateGalaxy);
-gui.add(parameters, 'branches').min(2).max(20).step(1).onFinishChange(generateGalaxy);
-gui.add(parameters, 'spin').min(-5).max(5).step(0.001).onFinishChange(generateGalaxy);
-gui.add(parameters, 'randomness').min(0).max(2).step(0.001).onFinishChange(generateGalaxy);
-gui.add(parameters, 'randomnessPower').min(1).max(10).step(0.001).onFinishChange(generateGalaxy);
-gui.addColor(parameters, 'insideColor').onFinishChange(generateGalaxy);
-gui.addColor(parameters, 'outsideColor').onFinishChange(generateGalaxy);
-/**
- * Sizes
- */
+//**GUI
+const guiAdd = () => {
+  gui.add(parameters, 'count').min(100).max(1000000).step(100).onChange(generateGalaxy);
+  gui.add(parameters, 'size').min(0.001).max(0.1).step(0.001).onFinishChange(generateGalaxy);
+  gui.add(parameters, 'radius').min(0.01).max(20).step(0.01).onFinishChange(generateGalaxy);
+  gui.add(parameters, 'branches').min(2).max(20).step(1).onFinishChange(generateGalaxy);
+  gui.add(parameters, 'spin').min(-5).max(5).step(0.001).onFinishChange(generateGalaxy);
+  gui.add(parameters, 'randomness').min(0).max(2).step(0.001).onFinishChange(generateGalaxy);
+  gui.add(parameters, 'randomnessPower').min(1).max(10).step(0.001).onFinishChange(generateGalaxy);
+  gui.addColor(parameters, 'insideColor').onFinishChange(generateGalaxy);
+  gui.addColor(parameters, 'outsideColor').onFinishChange(generateGalaxy);
+};
+guiAdd();
+
+//Canvas sizing
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -144,26 +141,48 @@ window.addEventListener('resize', () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
-/**
- * Camera
- */
 // Base camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
 camera.position.x = 0;
 camera.position.z = 200;
-
-//camera.position.z = 3;
-//camera.rotation.z = -1;
 scene.add(camera);
 
-//AboutObject
-const about = aboutSphere();
-console.log(about);
-scene.add(about);
+//ROUTES
+const circlesPoints = [
+  {
+    position: new THREE.Vector3(0, 0, 0),
+    element: document.querySelector('.circle-0'),
+  },
+  {
+    position: new THREE.Vector3(-3, 0, -3),
+    element: document.querySelector('.circle-1'),
+  },
+  {
+    position: new THREE.Vector3(2, 0, -2.5),
+    element: document.querySelector('.circle-2'),
+  },
+  {
+    position: new THREE.Vector3(-3.5, 0, 2.75),
+    element: document.querySelector('.circle-3'),
+  },
+  {
+    position: new THREE.Vector3(1.5, 0, 2),
+    element: document.querySelector('.circle-4'),
+  },
+];
 
-/**
- * Renderer
- */
+const routesIn = () => {
+  circlesPoints.forEach((point) => {
+    point.element?.classList.add('visible-circle'); // Removed '.' before 'visible'
+  });
+};
+routesIn();
+
+//Routes-internal page
+
+//Fleet
+
+//RENDER
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
 });
@@ -172,132 +191,76 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 //**GSAP ANIMATION */
 
-const rotAngle = Math.PI / 2;
+//Control sections elements
+const sections = [
+  //{ section: 'loader', x: 0, y: 0, z: 200, r: 0 },
+  { section: 'hero', x: 0, y: 0, z: 3, r: 0 },
+  { section: 'route', x: -5, y: 10, z: 0, r: (Math.PI / 2) * -1 },
+  { section: 'fleet', x: -8, y: 4, z: 16, r: (Math.PI / 16) * -1 },
+  { section: 'testimonials', x: 0, y: 3, z: 6, r: 0 },
+  { section: 'credits', x: 0, y: 2, z: 3, r: 0 },
+];
 
-const loaderMove = () => {
+//Get all contentHolders
+const contentHolders = document.querySelectorAll('.content-holder');
+
+//Main function sections content control and camera movement
+const sectionMove = ({ section, x, y, z, r }) => {
+  contentHolders.forEach((el) => el.classList.remove('visible'));
   gsap.to(camera.position, {
-    x: 0,
-    y: 0,
-    z: 200,
+    x: x,
+    y: y,
+    z: z,
     duration: 3,
   });
   gsap.to(camera.rotation, {
-    x: 0,
+    x: r,
     y: 0,
     z: 0,
     duration: 3,
   });
-  console.log('move to loader(start position)');
+  console.log(`move to ${section}`);
 };
 
-const heroMove = () => {
-  gsap.to(camera.position, {
-    x: 0,
-    y: 0,
-    z: 3,
-    duration: 3,
-  });
-  gsap.to(camera.rotation, {
-    x: 0,
-    y: 0,
-    z: 0,
-    duration: 3,
-  });
+let number = false;
 
-  console.log('move to hero');
-};
-
-const aboutMove = () => {
-  gsap.to(camera.position, {
-    x: -10,
-    y: 20,
-    z: 0,
-    duration: 3,
-  });
-  gsap.to(camera.rotation, {
-    x: (Math.PI / 2) * -1,
-    y: 0,
-    z: 0,
-    duration: 3,
-  });
-
-  console.log('move to about ');
-};
-
-const routeMove = () => {
-  gsap.to(camera.position, {
-    x: -5,
-    y: 10,
-    z: 0,
-    duration: 3,
-  });
-  gsap.to(camera.rotation, {
-    x: (Math.PI / 2) * -1,
-    y: 0,
-    z: 0,
-    duration: 3,
-  });
-
-  console.log('move to routes');
-};
-
-const fleetMove = () => {
-  gsap.to(camera.position, {
-    x: -8,
-    y: 5,
-    z: 16,
-    duration: 3,
-  });
-  gsap.to(camera.rotation, {
-    x: (Math.PI / 16) * -1,
-    y: 0,
-    z: 0,
-    duration: 3,
-  });
-  console.log('move to fleet');
-};
-
-const testMove = () => {
-  gsap.to(camera.position, {
-    x: 0,
-    y: 3,
-    z: 6,
-    duration: 3,
-  });
-  gsap.to(camera.rotation, {
-    x: 0,
-    y: 0,
-    z: 0,
-    duration: 3,
-  });
-
-  console.log('move to testimonials');
-};
-
-const credMove = () => {
-  gsap.to(camera.position, {
-    x: 0,
-    y: 2,
-    z: 3,
-    duration: 3,
-  });
-  gsap.to(camera.rotation, {
-    x: 0,
-    y: 0,
-    z: 0,
-    duration: 3,
-  });
-  console.log('move to credits');
+//Page loader
+const sectionCounter = (i, n) => {
+  if (n) {
+    contentHolders[i].classList.add('visible');
+    console.log(contentHolders[i]);
+  } else {
+    setTimeout(function () {
+      document.querySelectorAll('.navbar')[0].classList.add('visible');
+      contentHolders[0].classList.add('visible');
+    }, 3000);
+    number = true;
+  }
 };
 
 //Control Buttons
-const loaderbtn = document.getElementById('loaderbtn').addEventListener('click', loaderMove);
-const herobtn = document.getElementById('herobtn').addEventListener('click', heroMove);
-const aboutbtn = document.getElementById('aboutbtn').addEventListener('click', aboutMove);
-const routesbtn = document.getElementById('routesbtn').addEventListener('click', routeMove);
-const fleetbtn = document.getElementById('fleetbtn').addEventListener('click', fleetMove);
-const testbtn = document.getElementById('testbtn').addEventListener('click', testMove);
-const credbtn = document.getElementById('credbtn').addEventListener('click', credMove);
+const navButtons = document.querySelectorAll('.nav-link');
+const sectionTriggers = document.querySelectorAll('.section');
+
+//Triggers enabling loading
+for (let i = 0; i < navButtons.length; i++) {
+  sectionTriggers[i].id = 'section' + i;
+  ScrollTrigger.create({
+    trigger: `#section${[i]}`,
+    start: 'top 48%',
+    end: 'bottom 48%',
+    onToggle: (self) => [sectionMove(sections[i], i), sectionCounter(i, number)],
+  });
+  navButtons[i].addEventListener('click', function () {
+    sectionMove(sections[i], i);
+    location.href = `#${sectionTriggers[i].id}`;
+  });
+}
+
+//*CONTROLS//
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.enabled = false;
 
 /**
  * Animate
@@ -311,6 +274,14 @@ const tick = () => {
   galaxy.rotation.y += 0.00005;
   // Update controls
   //controls.update();
+  for (const point of circlesPoints) {
+    const screenPosition = point.position.clone();
+    screenPosition.project(camera);
+
+    const translateX = screenPosition.x * sizes.width * 0.5;
+    const translateY = -screenPosition.y * sizes.height * 0.5;
+    point.element.style.transform = `translateX(${translateX}px) translateY(${translateY}px)`;
+  }
 
   // Render
   renderer.render(scene, camera);
@@ -320,10 +291,3 @@ const tick = () => {
 };
 
 tick();
-
-/*
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
-controls.enabled = false;
-
-*/
